@@ -1,5 +1,6 @@
 package io.notnot.timespectorbot.slack;
 
+import io.notnot.timespectorbot.Project;
 import io.notnot.timespectorbot.ProjectDb;
 import io.notnot.timespectorbot.Time;
 import io.notnot.timespectorbot.TimeDb;
@@ -13,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.socket.WebSocketSession;
-
 import javax.annotation.PostConstruct;
 import java.net.MalformedURLException;
 import java.text.ParseException;
@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @JBot
 @Profile("slack")
@@ -64,35 +63,52 @@ public class SlackBot extends Bot {
 
     @Controller(pattern = "(timesum)", next = "whatProject")
     public void timeSum(WebSocketSession session, Event event) {
-        String projects = projectDb.getAllProjects().stream().map(p -> p.getName()).collect(Collectors.joining(", "));
+        List<Project> allProjects = projectDb.getAllProjects();
+
+        String projects="0 All projects\n";
+        int idx = 0;
+        for(Project project : allProjects) {
+            idx++;
+            projects = projects.concat( idx+" "+project.getName()+"\n");
+        }
+
         startConversation(event, "whatProject");
-        reply(session, event, "What project would you like to se summary of \n" + projects);
+        reply(session, event, "What project would you like to se summary of \n" + projects +"\n");
     }
 
     @Controller
     public void whatProject(WebSocketSession session, Event event) throws ParseException {
-        Matcher matcher = Pattern.compile("(.*) (\\d{8})").matcher(event.getText());
+        Matcher pattern = Pattern.compile("(.*) (\\d{8})").matcher(event.getText());
         ArrayList hours = new ArrayList();
 
-        String projectName = event.getText();
-        List<Time> times = null;
+        int projectNumber = 0;
+        List<Time> timeList = null;
+        List<Project> allProjects = projectDb.getAllProjects();
+        String projectName= "All projects";
 
         for (TimeDb timeDb : timeDbs) {
-
-            if (matcher.matches()) {
-                projectName = matcher.group(1);
-                times = timeDb.getInterval(matcher.group(2));
+            if (pattern.matches()) {
+                projectNumber = Integer.parseInt(pattern.group(1));
+                timeList = timeDb.getInterval(pattern.group(2));
             } else {
-                times = timeDb.getAllTime();
+                projectNumber = Integer.parseInt(event.getText());
+                timeList = timeDb.getAllTime();
             }
 
-            for (Time time : times) {
-                if (time.getProjectName().equalsIgnoreCase(projectName)) {
+            if (projectNumber>0){
+                 projectName = allProjects.get(projectNumber - 1).getName();
+            }
+
+            for (Time time : timeList) {
+                if (projectNumber   ==0){
+                    hours.add(time.getHours());
+                } else if (time.getProjectName().equals(projectName)) {
                     hours.add(time.getHours());
                 }
             }
         }
-        reply(session, event, projectName + " contains " + hours.stream().mapToInt(p -> (int) p).sum() + " hours");
+
+        reply(session, event,  projectName +" contains " + hours.stream().mapToInt(p -> (int) p).sum() + " hours");
         stopConversation(event);
     }
 }
