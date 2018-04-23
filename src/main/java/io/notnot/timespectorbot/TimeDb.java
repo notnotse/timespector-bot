@@ -6,13 +6,9 @@ import java.util.List;
 
 public class TimeDb extends CouchConnect{
 
-
     public TimeDb(String name, String url) throws MalformedURLException {
         super(name, url);
-
     }
-
-
 
     public List<Time> getAllTime(){
        return getAllDocuments(Time.class);
