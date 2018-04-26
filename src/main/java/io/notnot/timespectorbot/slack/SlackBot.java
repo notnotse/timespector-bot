@@ -144,4 +144,3 @@ public class SlackBot extends Bot {
         stopConversation(event);
     }
 }
-
