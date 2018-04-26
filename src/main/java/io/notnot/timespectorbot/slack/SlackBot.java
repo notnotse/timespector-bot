@@ -121,6 +121,8 @@ public class SlackBot extends Bot {
         List<Time> timeList = null;
         ArrayList hours = new ArrayList();
         ArrayList allHours = new ArrayList();
+        ArrayList billableHours = new ArrayList();
+        ArrayList nonBillableHours = new ArrayList();
 
         for (Project project : allProjects){
             for (TimeDb timeDb : timeDbs){
@@ -133,11 +135,16 @@ public class SlackBot extends Bot {
                     if (project.getName().equals(time.getProjectName())) {
                         hours.add(time.getHours());
                         allHours.add(time.getHours());
+                        if (time.isBillable()){
+                            billableHours.add(time.getHours());
+                        } else nonBillableHours.add(time.getHours());
                     }
                 }
             }
-            projects = projects.concat(project.getName()+" "+hours.stream().mapToInt(p -> (int)p).sum()+" hours"+"\n");
+            projects = projects.concat(project.getName()+"\n"+hours.stream().mapToInt(p -> (int)p).sum()+" Hrs Total\n"+" "+billableHours.stream().mapToInt(p -> (int)p).sum()+" Hrs Billable\n" + nonBillableHours.stream().mapToInt(p -> (int)p).sum()+" Hrs Non-Billable\n\n");
             hours.clear();
+            billableHours.clear();
+            nonBillableHours.clear();
         }
 
         reply(session, event, "All projects with corresponding hours\n\n"+projects+"\n\nAll hours combined: "+allHours.stream().mapToInt(p -> (int)p).sum());
