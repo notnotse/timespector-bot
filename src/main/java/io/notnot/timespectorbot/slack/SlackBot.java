@@ -96,11 +96,11 @@ public class SlackBot extends Bot {
             }
 
             if (projectNumber>0){
-                 projectName = allProjects.get(projectNumber - 1).getName();
+                projectName = allProjects.get(projectNumber - 1).getName();
             }
 
             for (Time time : timeList) {
-                if (projectNumber   ==0){
+                if (projectNumber==0){
                     hours.add(time.getHours());
                 } else if (time.getProjectName().equals(projectName)) {
                     hours.add(time.getHours());
@@ -109,6 +109,38 @@ public class SlackBot extends Bot {
         }
 
         reply(session, event,  projectName +" contains " + hours.stream().mapToInt(p -> (int) p).sum() + " hours");
+        stopConversation(event);
+    }
+
+    @Controller(pattern = "(sumall)")
+    public void sumall(WebSocketSession session, Event event) throws ParseException {
+        Matcher pattern = Pattern.compile("(.*) (\\d{8})").matcher(event.getText());
+
+        String projects = "";
+        List<Project> allProjects = projectDb.getAllProjects();
+        List<Time> timeList = null;
+        ArrayList hours = new ArrayList();
+        ArrayList allHours = new ArrayList();
+
+        for (Project project : allProjects){
+            for (TimeDb timeDb : timeDbs){
+                if (pattern.matches()){
+                    timeList = timeDb.getInterval(pattern.group(2));
+                } else {
+                    timeList = timeDb.getAllTime();
+                }
+                for (Time time : timeList) {
+                    if (project.getName().equals(time.getProjectName())) {
+                        hours.add(time.getHours());
+                        allHours.add(time.getHours());
+                    }
+                }
+            }
+            projects = projects.concat(project.getName()+" "+hours.stream().mapToInt(p -> (int)p).sum()+" hours"+"\n");
+            hours.clear();
+        }
+
+        reply(session, event, "All projects with corresponding hours\n\n"+projects+"\n\nAll hours combined: "+allHours.stream().mapToInt(p -> (int)p).sum());
         stopConversation(event);
     }
 }
