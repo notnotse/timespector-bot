@@ -1,8 +1,7 @@
 # Timespector Bot
  Timespector bot gives a summary of hours from the Timespector app
 
- ## How to use this image
- ---
+## How to use this image
 Start the bot with:
 ```
 $ docker run -d --name timespector-bot \
@@ -13,13 +12,11 @@ $ docker run -d --name timespector-bot \
 notnot/timespector-bot
 ```
 
- ## Setup
----
+## Setup
 #### Create Slack Bot integration
 Go to [Create a Slack Bot](https://api.slack.com/bot-users) page and, if you haven't already, generate a token. This is your `SLACK_API_TOKEN`.
 
 ## Usage
----
 * Type `timesum` in chanel where timespector-bot is active.
 * Timespector-bot will reply you with a list of all projects.
 * Chose a project from the list with a number and Timespector-bot reply's with corresponding hours.
@@ -31,7 +28,6 @@ Go to [Create a Slack Bot](https://api.slack.com/bot-users) page and, if you hav
 * If you enter `sumall` with a date after ex.`20180410` the summary you receive will be from that date.
 
 ## Environment Variables
----
 Before you start the timespector-bot there are four environment variables you need to add to the Dockerfile, and one variable that you use before you run the docker command.
 
 `SLACK_API_TOKEN`

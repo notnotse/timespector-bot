@@ -8,6 +8,5 @@ ENV projectDb="project"
 ENV timeDbUrl="http://localhost:5984"
 ENV projectDbUrl="http://localhost:5984"
 EXPOSE 8080
-#RUN apk add --update openssl
 COPY run.sh /run.sh
 CMD sh /run.sh
