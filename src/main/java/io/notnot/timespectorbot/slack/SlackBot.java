@@ -67,6 +67,9 @@ public class SlackBot extends Bot {
         String projects="0 All projects\n";
         int idx = 0;
         for(Project project : allProjects) {
+            if (!project.getStatus().equals("ACTIVE")){
+                continue;
+            }
             idx++;
             projects = projects.concat( idx+" "+project.getName()+"\n");
         }
@@ -129,6 +132,9 @@ public class SlackBot extends Bot {
         ArrayList nonBillableTotal = new ArrayList();
 
         for (Project project : allProjects){
+            if (!project.getStatus().equals("ACTIVE")){
+                continue;
+            }
             for (TimeDb timeDb : timeDbs){
                 if (pattern.matches()){
                     timeList = timeDb.getInterval(pattern.group(2));
@@ -137,18 +143,18 @@ public class SlackBot extends Bot {
                 }
                 for (Time time : timeList) {
                     if (project.getName().equals(time.getProjectName())) {
-                        hours.add(time.getHours());
-                        allHours.add(time.getHours());
-                        if (time.isBillable()){
-                            billableHours.add(time.getHours());
-                            billableTotal.add(time.getHours());
-                        } else{
-                            nonBillableHours.add(time.getHours());
-                            nonBillableTotal.add(time.getHours());
+                            hours.add(time.getHours());
+                            allHours.add(time.getHours());
+                            if (time.isBillable()){
+                                billableHours.add(time.getHours());
+                                billableTotal.add(time.getHours());
+                            } else{
+                                nonBillableHours.add(time.getHours());
+                                nonBillableTotal.add(time.getHours());
+                            }
                         }
                     }
                 }
-            }
             projects = projects.concat(project.getName() + "\n" + billableHours.stream().mapToInt(p -> (int)p).sum() + " Hrs Billable\n" + nonBillableHours.stream().mapToInt(p -> (int)p).sum() + " Hrs Non-Billable\n"+ hours.stream().mapToInt(p -> (int)p).sum() + " Hrs Total\n\n ");
             hours.clear();
             billableHours.clear();
