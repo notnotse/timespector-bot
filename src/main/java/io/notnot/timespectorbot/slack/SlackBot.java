@@ -26,7 +26,6 @@ import java.util.regex.Pattern;
 @Profile("slack")
 public class SlackBot extends Bot {
 
-
     @Value("${slackBotToken}")
     private String slackToken;
 
@@ -71,21 +70,22 @@ public class SlackBot extends Bot {
             idx++;
             projects = projects.concat( idx+" "+project.getName()+"\n");
         }
-
         startConversation(event, "whatProject");
-        reply(session, event, "What project would you like to se summary of \n" + projects +"\n");
+        reply(session, event, "What project would you like to se summary of \n" + projects + "\n");
     }
 
     @Controller
     public void whatProject(WebSocketSession session, Event event) throws ParseException {
         Matcher pattern = Pattern.compile("(.*) (\\d{8})").matcher(event.getText());
-        ArrayList hours = new ArrayList();
 
         int projectNumber = 0;
         List<Time> timeList = null;
         List<Project> allProjects = projectDb.getAllProjects();
         String projectName= "All projects";
         String projetId= null;
+        ArrayList allHours = new ArrayList();
+        ArrayList billableHours = new ArrayList();
+        ArrayList nonBillableHours = new ArrayList();
 
         for (TimeDb timeDb : timeDbs) {
             if (pattern.matches()) {
@@ -101,14 +101,16 @@ public class SlackBot extends Bot {
             }
             for (Time time : timeList) {
                 if (projectNumber==0){
-                    hours.add(time.getHours());
+                    allHours.add(time.getHours());
                 } else if (projetId.equals(time.getProjectId())) {
-                    hours.add(time.getHours());
+                    allHours.add(time.getHours());
+                    if (time.isBillable()){
+                        billableHours.add(time.getHours());
+                    } else nonBillableHours.add(time.getHours());
                 }
             }
         }
-
-        reply(session, event,  projectName +" contains " + hours.stream().mapToInt(p -> (int) p).sum() + " hours");
+        reply(session, event,  projectName+"\n\n" + billableHours.stream().mapToInt(p -> (int)p).sum() + " Hrs Billable\n" + nonBillableHours.stream().mapToInt(p -> (int) p).sum() + " Hrs Non-Billable\n" + allHours.stream().mapToInt(p -> (int) p).sum() + " Hrs Total");
         stopConversation(event);
     }
 
@@ -123,6 +125,8 @@ public class SlackBot extends Bot {
         ArrayList allHours = new ArrayList();
         ArrayList billableHours = new ArrayList();
         ArrayList nonBillableHours = new ArrayList();
+        ArrayList billableTotal = new ArrayList();
+        ArrayList nonBillableTotal = new ArrayList();
 
         for (Project project : allProjects){
             for (TimeDb timeDb : timeDbs){
@@ -137,17 +141,20 @@ public class SlackBot extends Bot {
                         allHours.add(time.getHours());
                         if (time.isBillable()){
                             billableHours.add(time.getHours());
-                        } else nonBillableHours.add(time.getHours());
+                            billableTotal.add(time.getHours());
+                        } else{
+                            nonBillableHours.add(time.getHours());
+                            nonBillableTotal.add(time.getHours());
+                        }
                     }
                 }
             }
-            projects = projects.concat(project.getName()+"\n"+hours.stream().mapToInt(p -> (int)p).sum()+" Hrs Total\n"+" "+billableHours.stream().mapToInt(p -> (int)p).sum()+" Hrs Billable\n" + nonBillableHours.stream().mapToInt(p -> (int)p).sum()+" Hrs Non-Billable\n\n");
+            projects = projects.concat(project.getName() + "\n" + billableHours.stream().mapToInt(p -> (int)p).sum() + " Hrs Billable\n" + nonBillableHours.stream().mapToInt(p -> (int)p).sum() + " Hrs Non-Billable\n"+ hours.stream().mapToInt(p -> (int)p).sum() + " Hrs Total\n\n ");
             hours.clear();
             billableHours.clear();
             nonBillableHours.clear();
         }
-
-        reply(session, event, "All projects with corresponding hours\n\n"+projects+"\n\nAll hours combined: "+allHours.stream().mapToInt(p -> (int)p).sum());
+        reply(session, event, "All projects with corresponding hours\n\n" + projects + "\n\nSummary for all projects\n" + billableTotal.stream().mapToInt(p -> (int)p).sum() + " Hrs Billable\n" + nonBillableTotal.stream().mapToInt(p -> (int)p).sum() + " Hrs Non-Billable\n"+ allHours.stream().mapToInt(p -> (int)p).sum() + " Hrs Total");
         stopConversation(event);
     }
 }
