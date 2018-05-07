@@ -5,6 +5,7 @@ import io.notnot.timespectorbot.ProjectDb;
 import io.notnot.timespectorbot.Time;
 import io.notnot.timespectorbot.TimeDb;
 import me.ramswaroop.jbot.core.common.Controller;
+import me.ramswaroop.jbot.core.common.EventType;
 import me.ramswaroop.jbot.core.common.JBot;
 import me.ramswaroop.jbot.core.slack.Bot;
 import me.ramswaroop.jbot.core.slack.models.Event;
@@ -60,7 +61,7 @@ public class SlackBot extends Bot {
         return this;
     }
 
-    @Controller(pattern = "(timesum)", next = "whatProject")
+    @Controller(pattern = "(timesum)", events = {EventType.DIRECT_MESSAGE, EventType.MESSAGE}, next = "whatProject")
     public void timeSum(WebSocketSession session, Event event) {
         List<Project> allProjects = projectDb.getAllProjects();
 
@@ -77,7 +78,7 @@ public class SlackBot extends Bot {
         reply(session, event, "What project would you like to se summary of \n" + projects + "\n");
     }
 
-    @Controller
+    @Controller(events = {EventType.DIRECT_MESSAGE, EventType.MESSAGE})
     public void whatProject(WebSocketSession session, Event event) throws ParseException {
         Matcher pattern = Pattern.compile("(.*) (\\d{8})").matcher(event.getText());
 
@@ -117,7 +118,7 @@ public class SlackBot extends Bot {
         stopConversation(event);
     }
 
-    @Controller(pattern = "(sumall)")
+    @Controller(pattern = "(sumall)", events = {EventType.DIRECT_MESSAGE, EventType.MESSAGE})
     public void sumall(WebSocketSession session, Event event) throws ParseException {
         Matcher pattern = Pattern.compile("(.*) (\\d{8})").matcher(event.getText());
 
@@ -161,6 +162,5 @@ public class SlackBot extends Bot {
             nonBillableHours.clear();
         }
         reply(session, event, "All projects with corresponding hours\n\n" + projects + "\n\nSummary for all projects\n" + billableTotal.stream().mapToInt(p -> (int)p).sum() + " Hrs Billable\n" + nonBillableTotal.stream().mapToInt(p -> (int)p).sum() + " Hrs Non-Billable\n"+ allHours.stream().mapToInt(p -> (int)p).sum() + " Hrs Total");
-        stopConversation(event);
     }
 }
