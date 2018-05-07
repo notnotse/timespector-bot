@@ -85,6 +85,7 @@ public class SlackBot extends Bot {
         List<Time> timeList = null;
         List<Project> allProjects = projectDb.getAllProjects();
         String projectName= "All projects";
+        String projetId= null;
 
         for (TimeDb timeDb : timeDbs) {
             if (pattern.matches()) {
@@ -94,15 +95,14 @@ public class SlackBot extends Bot {
                 projectNumber = Integer.parseInt(event.getText());
                 timeList = timeDb.getAllTime();
             }
-
             if (projectNumber>0){
                 projectName = allProjects.get(projectNumber - 1).getName();
+                projetId = allProjects.get(projectNumber -1).getId();
             }
-
             for (Time time : timeList) {
                 if (projectNumber==0){
                     hours.add(time.getHours());
-                } else if (time.getProjectName().equals(projectName)) {
+                } else if (projetId.equals(time.getProjectId())) {
                     hours.add(time.getHours());
                 }
             }
