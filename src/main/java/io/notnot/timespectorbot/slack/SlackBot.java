@@ -14,12 +14,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
+import org.springframework.web.socket.PingMessage;
 import org.springframework.web.socket.WebSocketSession;
 import javax.annotation.PostConstruct;
 import java.net.MalformedURLException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,8 +39,11 @@ public class SlackBot extends Bot {
 
     @Value("${timeDbUrl}")
     private String timeDbUrl;
-
     private List<TimeDb> timeDbs = new ArrayList<>();
+
+    private final ScheduledExecutorService executorService =
+            Executors.newScheduledThreadPool(1);
+
     private static final Logger logger = LoggerFactory.getLogger(SlackBot.class);
 
     @Autowired
@@ -61,16 +68,32 @@ public class SlackBot extends Bot {
         return this;
     }
 
+    @Override
+    public void afterConnectionEstablished(WebSocketSession session) {
+        logger.info("WebSocket is now connected: {}", session);
+        logger.info("Scheduling ping");
+
+        long initialDelay = 10;
+        long period = 300;
+        TimeUnit unit = TimeUnit.SECONDS;
+        executorService.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    logger.debug("Sending Spring PingMessage");
+                    session.sendMessage(new PingMessage());
+                } catch (Exception e) {
+                    logger.error("Could not send ping", e);
+                } 			}
+        }, initialDelay, period, unit);
+    }
+
     @Controller(pattern = "(timesum)", events = {EventType.DIRECT_MESSAGE, EventType.MESSAGE}, next = "whatProject")
     public void timeSum(WebSocketSession session, Event event) {
-        List<Project> allProjects = projectDb.getAllProjects();
-
+        List<Project> allActive = projectDb.getAllActive();
         String projects="0 All projects\n";
         int idx = 0;
-        for(Project project : allProjects) {
-            if (!project.getStatus().equals("ACTIVE")){
-                continue;
-            }
+        for(Project project : allActive) {
             idx++;
             projects = projects.concat( idx+" "+project.getName()+"\n");
         }
@@ -84,12 +107,13 @@ public class SlackBot extends Bot {
 
         int projectNumber = 0;
         List<Time> timeList = null;
-        List<Project> allProjects = projectDb.getAllProjects();
+        List<Project> allActive = projectDb.getAllActive();
         String projectName= "All projects";
         String projetId= null;
         ArrayList allHours = new ArrayList();
         ArrayList billableHours = new ArrayList();
         ArrayList nonBillableHours = new ArrayList();
+
 
         for (TimeDb timeDb : timeDbs) {
             if (pattern.matches()) {
@@ -100,8 +124,8 @@ public class SlackBot extends Bot {
                 timeList = timeDb.getAllTime();
             }
             if (projectNumber>0){
-                projectName = allProjects.get(projectNumber - 1).getName();
-                projetId = allProjects.get(projectNumber -1).getId();
+                projectName = allActive.get(projectNumber - 1).getName();
+                projetId = allActive.get(projectNumber -1).getId();
             }
             for (Time time : timeList) {
                 if (projectNumber==0){
@@ -114,6 +138,7 @@ public class SlackBot extends Bot {
                 }
             }
         }
+
         reply(session, event,  projectName+"\n\n" + billableHours.stream().mapToInt(p -> (int)p).sum() + " Hrs Billable\n" + nonBillableHours.stream().mapToInt(p -> (int) p).sum() + " Hrs Non-Billable\n" + allHours.stream().mapToInt(p -> (int) p).sum() + " Hrs Total");
         stopConversation(event);
     }
@@ -123,7 +148,7 @@ public class SlackBot extends Bot {
         Matcher pattern = Pattern.compile("(.*) (\\d{8})").matcher(event.getText());
 
         String projects = "";
-        List<Project> allProjects = projectDb.getAllProjects();
+        List<Project> allActive = projectDb.getAllActive();
         List<Time> timeList = null;
         ArrayList hours = new ArrayList();
         ArrayList allHours = new ArrayList();
@@ -132,10 +157,7 @@ public class SlackBot extends Bot {
         ArrayList billableTotal = new ArrayList();
         ArrayList nonBillableTotal = new ArrayList();
 
-        for (Project project : allProjects){
-            if (!project.getStatus().equals("ACTIVE")){
-                continue;
-            }
+        for (Project project : allActive){
             for (TimeDb timeDb : timeDbs){
                 if (pattern.matches()){
                     timeList = timeDb.getInterval(pattern.group(2));

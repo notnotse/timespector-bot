@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 import java.net.MalformedURLException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class ProjectDb extends CouchConnect {
@@ -16,5 +17,9 @@ public class ProjectDb extends CouchConnect {
     public List<Project> getAllProjects(){
         return getAllDocuments(Project.class);
 
+    }
+
+    public List<Project> getAllActive(){
+        return getAllDocuments(Project.class).stream().filter(project -> project.getStatus().equals("ACTIVE")).collect(Collectors.toList());
     }
 }
