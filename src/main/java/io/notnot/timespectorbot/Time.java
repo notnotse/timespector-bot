@@ -6,7 +6,7 @@ public class Time extends CouchDbDocument {
 
     private String id;
     private String rev;
-    private int hours;
+    private double hours;
     private String description;
     private String projectId;
     private String projectName;
@@ -24,11 +24,11 @@ public class Time extends CouchDbDocument {
         this.rev = rev;
     }
 
-    public int getHours() {
+    public double getHours() {
         return hours;
     }
 
-    public void setHours(int hours) {
+    public void setHours(double hours) {
         this.hours = hours;
     }
 

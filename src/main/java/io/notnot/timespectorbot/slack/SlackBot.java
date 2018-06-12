@@ -130,6 +130,9 @@ public class SlackBot extends Bot {
             for (Time time : timeList) {
                 if (projectNumber==0){
                     allHours.add(time.getHours());
+                    if (time.isBillable()){
+                        billableHours.add(time.getHours());
+                    } else nonBillableHours.add(time.getHours());
                 } else if (projetId.equals(time.getProjectId())) {
                     allHours.add(time.getHours());
                     if (time.isBillable()){
@@ -139,7 +142,7 @@ public class SlackBot extends Bot {
             }
         }
 
-        reply(session, event,  projectName+"\n\n" + billableHours.stream().mapToInt(p -> (int)p).sum() + " Hrs Billable\n" + nonBillableHours.stream().mapToInt(p -> (int) p).sum() + " Hrs Non-Billable\n" + allHours.stream().mapToInt(p -> (int) p).sum() + " Hrs Total");
+        reply(session, event,  projectName+"\n\n" + billableHours.stream().mapToDouble(p -> (double)p).sum() + " Hrs Billable\n" + nonBillableHours.stream().mapToDouble(p -> (double) p).sum() + " Hrs Non-Billable\n" + allHours.stream().mapToDouble(p -> (double) p).sum() + " Hrs Total");
         stopConversation(event);
     }
 
@@ -178,11 +181,11 @@ public class SlackBot extends Bot {
                         }
                     }
                 }
-            projects = projects.concat(project.getName() + "\n" + billableHours.stream().mapToInt(p -> (int)p).sum() + " Hrs Billable\n" + nonBillableHours.stream().mapToInt(p -> (int)p).sum() + " Hrs Non-Billable\n"+ hours.stream().mapToInt(p -> (int)p).sum() + " Hrs Total\n\n ");
+            projects = projects.concat(project.getName() + "\n" + billableHours.stream().mapToDouble(p -> (double)p).sum() + " Hrs Billable\n" + nonBillableHours.stream().mapToDouble(p -> (double)p).sum() + " Hrs Non-Billable\n"+ hours.stream().mapToDouble(p -> (double)p).sum() + " Hrs Total\n\n ");
             hours.clear();
             billableHours.clear();
             nonBillableHours.clear();
         }
-        reply(session, event, "All projects with corresponding hours\n\n" + projects + "\n\nSummary for all projects\n" + billableTotal.stream().mapToInt(p -> (int)p).sum() + " Hrs Billable\n" + nonBillableTotal.stream().mapToInt(p -> (int)p).sum() + " Hrs Non-Billable\n"+ allHours.stream().mapToInt(p -> (int)p).sum() + " Hrs Total");
+        reply(session, event, "All projects with corresponding hours\n\n" + projects + "\n\nSummary for all projects\n" + billableTotal.stream().mapToDouble(p -> (double)p).sum() + " Hrs Billable\n" + nonBillableTotal.stream().mapToDouble(p -> (double)p).sum() + " Hrs Non-Billable\n"+ allHours.stream().mapToDouble(p -> (double)p).sum() + " Hrs Total");
     }
 }
